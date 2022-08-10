@@ -1,9 +1,11 @@
 <template>
   <div class="login-container">
+    <!-- el-form组件，elementUI插件里面的组件  经常展示表单元素 
+    model：收集表单数据  rules：表单验证规则  -->
     <el-form ref="loginForm" :model="loginForm" :rules="loginRules" class="login-form" auto-complete="on" label-position="left">
 
       <div class="title-container">
-        <h3 class="title">Login Form</h3>
+        <h3 class="title">登录</h3>
       </div>
 
       <el-form-item prop="username">
@@ -41,7 +43,7 @@
         </span>
       </el-form-item>
 
-      <el-button :loading="loading" type="primary" style="width:100%;margin-bottom:30px;" @click.native.prevent="handleLogin">Login</el-button>
+      <el-button :loading="loading" type="primary" style="width:100%;margin-bottom:30px;" @click.native.prevent="handleLogin">登录</el-button>
 
       <div class="tips">
         <span style="margin-right:20px;">username: admin</span>
@@ -58,6 +60,7 @@ import { validUsername } from '@/utils/validate'
 export default {
   name: 'Login',
   data() {
+    // 表单验证（用户名与密码）
     const validateUsername = (rule, value, callback) => {
       if (!validUsername(value)) {
         callback(new Error('Please enter the correct user name'))
@@ -105,12 +108,18 @@ export default {
         this.$refs.password.focus()
       })
     },
+    // 登陆业务
     handleLogin() {
+        // 验证表单元素是否符合规则
       this.$refs.loginForm.validate(valid => {
+        // 如果符合验证规则
         if (valid) {
+            // 按钮loading效果
           this.loading = true
+        //   派发actions
           this.$store.dispatch('user/login', this.loginForm).then(() => {
             this.$router.push({ path: this.redirect || '/' })
+            // loading效果结束
             this.loading = false
           }).catch(() => {
             this.loading = false
@@ -182,6 +191,9 @@ $light_gray:#eee;
   width: 100%;
   background-color: $bg;
   overflow: hidden;
+// 登录页背景图片  
+  background: url(~@/assets/background.jpeg);
+  background-size: 100% 100%;
 
   .login-form {
     position: relative;

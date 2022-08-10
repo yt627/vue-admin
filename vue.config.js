@@ -34,9 +34,16 @@ module.exports = {
     open: true,
     overlay: {
       warnings: false,
-      errors: true
+      errors: false   //true改为了false
     },
-    before: require('./mock/mock-server.js')
+    // 配置代理跨域
+    proxy: {
+        '/dev-api': {
+          target: 'http://gmall-h5-api.atguigu.cn',
+          pathRewrite: { '^/dev-api': '' },
+        },
+      },
+    // before: require('./mock/mock-server.js')  //注释掉
   },
   configureWebpack: {
     // provide the app's title in webpack's name field, so that
