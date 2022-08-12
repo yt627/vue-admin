@@ -1,7 +1,7 @@
 <template>
     <div>
         <!-- 按钮 -->
-        <el-button type="primary" icon="el-icon-plus" style="margin:10px 0px">添加</el-button>
+        <el-button type="primary" icon="el-icon-plus" style="margin:10px 0px" @click="showDialog">添加</el-button>
         <!-- 表格组件 
         data:表格组件将来需要展示的数据 数组类型  -->
         <el-table border :data="list">
@@ -15,25 +15,54 @@
                 </template>
             </el-table-column>
             <el-table-column prop="prop" label="操作" width="width">
-                <template slot-scope="{row,$index}">
-                    <el-button type="warning" icon="el-icon-edit">修改</el-button>
+                <template  slot-scope="{ row, $index }">
+                    <el-button type="warning" icon="el-icon-edit" @click="updateTradeMark(row)">修改</el-button>
                     <el-button type="danger" icon="el-icon-delete">删除</el-button>
                 </template>
-            </el-table-column>           
-            
+            </el-table-column>
         </el-table>
         <!-- 分页器
         @size-change="handleSizeChange"
         @current-change="handleCurrentChange"  -->
-        <el-pagination
-        style="margintop:20px; text-align:center" 
-        :current-page="page" 
-        :total="total" 
-        :page-size="limit"
-        :page-count="7"
-        :page-sizes="[3, 5, 10]" 
-        layout="prev, pager, next, jumper,->, sizes, total">
+        <el-pagination style="margintop:20px; text-align:center" :current-page="page" :total="total" :page-size="limit"
+            :page-count="7" :page-sizes="[3, 5, 10]" layout="prev, pager, next, jumper,->, sizes, total">
         </el-pagination>
+        <!-- 
+            dialog对话框
+            visible.sync：控制对话框显示与隐藏
+         -->
+        <el-dialog title="添加品牌" :visible.sync="dialogFormVisible">
+            <!-- 
+                form表单
+                :model属性：把表单的数据收集到那个对象身上
+            -->
+            <el-form style="width:80%" :model="tmForm">
+                <el-form-item label="品牌名称" label-width="100px">
+                    <el-input autocomplete="off" v-model="tmForm.tmName"></el-input>
+                </el-form-item>
+                <el-form-item label="品牌LOGO" label-width="100px">
+                    <!-- 
+                        这里收集数据不能使用v-model，因为不是表单元素
+                        action：图片上传的地址
+                        :on-success:可以检测出图片是否上传成功，上传成功就会执行一次
+                     -->
+                    <el-upload 
+                    class="avatar-uploader" action="/dev-api/admin/product/fileUpload"
+                        :show-file-list="false" 
+                        :on-success="handleAvatarSuccess" 
+                        :before-upload="beforeAvatarUpload">
+                        <img v-if="tmForm.logoUrl" :src="tmForm.logoUrl" class="avatar"
+                    >
+                        <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+                        <div slot="tip" class="el-upload__tip">只能上传jpg/png文件，且不超过500kb</div>
+                    </el-upload>
+                </el-form-item>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+                <el-button @click="dialogFormVisible = false">取 消</el-button>
+                <el-button type="primary" @click="addOrUpdateTradeMark">确 定</el-button>
+            </div>
+        </el-dialog>
     </div>
 </template>
 
@@ -42,10 +71,21 @@ export default {
     name:'TradeMark',
     data(){
         return{
+            // 当前所在页码数
             page:1,
+            // 
             limit:5,
+            // 
             total:0,
-            list:[]
+            // 
+            list:[],
+            // 
+            dialogFormVisible:false,
+            // 
+            tmForm:{
+                tmName:'',
+                logoUrl:'',
+            }
         }
     },
     // 组件挂载完毕发请求
@@ -64,11 +104,73 @@ export default {
                 this.total= result.data.total;
                 this.list= result.data.records;
             }
+        },
+        showDialog(){
+            // 显示对话框
+            this.dialogFormVisible = true;
+            // 清除数据
+            this.tmForm.tmName = '';
+            this.tmForm.logoUrl = '';
+        },
+        // 修改某一个品牌
+        updateTradeMark(row){
+            // 显示对话框
+            this.dialogFormVisible = true;
+            // 将已经有的品牌信息赋值给tmName进行展示
+            this.tmForm = {...row};
+        },
+        // 上传图片
+        handleAvatarSuccess(res, file) {
+            // res:上传成功后返回的前端的数据
+            this.tmForm.logoUrl = res.data;
+        },
+        beforeAvatarUpload(file) {
+            const isJPG = file.type === 'image/jpeg';
+            const isLt2M = file.size / 1024 / 1024 < 2;
+
+            if (!isJPG) {
+                this.$message.error('上传头像图片只能是 JPG 格式!');
+            }
+            if (!isLt2M) {
+                this.$message.error('上传头像图片大小不能超过 2MB!');
+            }
+            return isJPG && isLt2M;
+        },
+        async addOrUpdateTradeMark(){
+            this.dialogFormVisible = false;
+            // 发请求
+            let result = await this.$API.trademark.reqAddOrUpdateTradeMark(this.tmForm);
+            if(result.code == 200){
+                this.$message(this.tmForm.id?{message:"修改品牌成功",type:'sucess'}:{message:"添加品牌成功",type:'success'});
+                this.getPageList();
+            }
         }
     }
 }
 </script>
 
 <style>
-
+  .avatar-uploader .el-upload {
+    border: 1px dashed #d9d9d9;
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .avatar-uploader .el-upload:hover {
+    border-color: #409EFF;
+  }
+  .avatar-uploader-icon {
+    font-size: 28px;
+    color: #8c939d;
+    width: 178px;
+    height: 178px;
+    line-height: 178px;
+    text-align: center;
+  }
+  .avatar {
+    width: 178px;
+    height: 178px;
+    display: block;
+  }
 </style>
